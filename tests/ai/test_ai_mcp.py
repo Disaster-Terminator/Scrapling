@@ -7,6 +7,7 @@ from threading import Thread
 import pytest
 import pytest_httpbin
 from mcp.types import ImageContent, TextContent
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
 
 from scrapling.core.ai import (
     ScraplingMCPServer,
@@ -58,6 +59,19 @@ class TestMCPServer:
         """Test the bulk_fetch tool method"""
         result = await server.bulk_fetch(urls=(test_url, test_url), headless=True)
         assert all(isinstance(r, ResponseModel) for r in result)
+
+    @pytest.mark.asyncio
+    async def test_fetch_wait_selector_timeout_raises(self, server):
+        """wait_selector failures should be reported to the caller."""
+        with _serve_html(b"<html><body><h1>Ready</h1></body></html>") as test_url:
+            with pytest.raises(PlaywrightTimeoutError, match="#missing"):
+                await server.fetch(
+                    url=test_url,
+                    headless=True,
+                    wait_selector="#missing",
+                    wait_selector_state="visible",
+                    timeout=500,
+                )
 
     @pytest.mark.asyncio
     async def test_stealthy_fetch_tool(self, server, test_url):
