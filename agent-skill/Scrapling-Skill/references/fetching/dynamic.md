@@ -66,7 +66,7 @@ All arguments for `DynamicFetcher` and its session classes:
 |     init_script     | An absolute path to a JavaScript file to be executed on page creation for all pages in this session.                                                                                                                                |    ✔️    |
 | wait_selector_state | Scrapling will wait for the given state to be fulfilled for the selector given with `wait_selector`. _Default state is `attached`._                                                                                                 |    ✔️    |
 |    google_search    | Enabled by default, Scrapling will set a Google referer header.                                                                                               |    ✔️    |
-|    extra_headers    | A dictionary of extra headers to add to the request. _The referer set by `google_search` takes priority over the referer set here if used together._                                                                   |    ✔️    |
+|    extra_headers    | A dictionary of extra headers to add to the request. If it contains a Referer header, it takes priority over the Google referer set by `google_search`.                                                   |    ✔️    |
 |        proxy        | The proxy to be used with requests. It can be a string or a dictionary with only the keys 'server', 'username', and 'password'.                                                                                                     |    ✔️    |
 |     real_chrome     | If you have a Chrome browser installed on your device, enable this, and the Fetcher will launch and use an instance of your browser.                                                                                                |    ✔️    |
 |       locale        | Specify user locale, for example, `en-GB`, `de-DE`, etc. Locale will affect `navigator.language` value, `Accept-Language` request header value, as well as number and date formatting rules. Defaults to the system default locale. |    ✔️    |
@@ -89,7 +89,7 @@ In session classes, all these arguments can be set globally for the session. Sti
 
 **Notes:**
 1. The `disable_resources` option made requests ~25% faster in tests for some websites and can help save proxy usage, but be careful with it, as it can cause some websites to never finish loading.
-2. The `google_search` argument is enabled by default for all requests, setting the referer to `https://www.google.com/`. If used together with `extra_headers`, it takes priority over the referer set there.
+2. The `google_search` argument is enabled by default for all requests, setting the referer to `https://www.google.com/`. If `extra_headers` contains a Referer header, the user-supplied Referer takes priority.
 3. Since version 0.3.13, the `stealth` option has been removed here in favor of the `StealthyFetcher` class, and the `hide_canvas` option has been moved to it. The `disable_webgl` argument has been moved to the `StealthyFetcher` class and renamed as `allow_webgl`.
 4. If you didn't set a user agent and enabled headless mode, the fetcher will generate a real user agent for the same browser version and use it. If you didn't set a user agent and didn't enable headless mode, the fetcher will use the browser's default user agent, which is the same as in standard browsers in the latest versions.
 
