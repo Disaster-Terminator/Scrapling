@@ -33,6 +33,22 @@ class TestMergeRequestArgsSkipsBrowserParams:
         args = self._build_args(extra_headers={"X-Custom": "val"})
         assert "extra_headers" not in args
 
+    def test_user_referer_overrides_stealth_google_referer(self):
+        """User-supplied Referer headers take priority over stealth defaults."""
+        args = self._build_args(
+            headers={"Referer": "https://example.com/custom"},
+            impersonate=None,
+            stealthy_headers=True,
+        )
+
+        assert args["headers"]["Referer"] == "https://example.com/custom"
+
+    def test_stealthy_headers_false_does_not_disable_impersonation(self):
+        """stealthy_headers only controls Scrapling's extra headers layer."""
+        args = self._build_args(impersonate="chrome", stealthy_headers=False)
+
+        assert args["impersonate"] == "chrome"
+
     def test_url_present(self):
         """The url must always be present in the output dict."""
         args = self._build_args()

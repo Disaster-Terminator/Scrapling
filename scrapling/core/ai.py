@@ -531,7 +531,7 @@ class ScraplingMCPServer:
         :param real_chrome: If you have a Chrome browser installed on your device, enable this, and the Fetcher will launch an instance of your browser and use it.
         :param cdp_url: Instead of launching a new browser instance, connect to this CDP URL to control real browsers through CDP.
         :param google_search: Enabled by default, Scrapling will set a Google referer header.
-        :param extra_headers: A dictionary of extra headers to add to the request. _The referer set by `google_search` takes priority over the referer set here if used together._
+        :param extra_headers: A dictionary of extra headers to add to the request. If it contains a Referer header, it takes priority over the Google referer set by `google_search`.
         :param proxy: The proxy to be used with requests, it can be a string or a dictionary with the keys 'server', 'username', and 'password' only.
         :param session_id: Optional session ID from open_session. If provided, reuses the existing browser session instead of creating a new one.
         """
@@ -613,7 +613,7 @@ class ScraplingMCPServer:
         :param real_chrome: If you have a Chrome browser installed on your device, enable this, and the Fetcher will launch an instance of your browser and use it.
         :param cdp_url: Instead of launching a new browser instance, connect to this CDP URL to control real browsers through CDP.
         :param google_search: Enabled by default, Scrapling will set a Google referer header.
-        :param extra_headers: A dictionary of extra headers to add to the request. _The referer set by `google_search` takes priority over the referer set here if used together._
+        :param extra_headers: A dictionary of extra headers to add to the request. If it contains a Referer header, it takes priority over the Google referer set by `google_search`.
         :param proxy: The proxy to be used with requests, it can be a string or a dictionary with the keys 'server', 'username', and 'password' only.
         :param session_id: Optional session ID from open_session. If provided, reuses the existing browser session instead of creating a new one.
         """
@@ -723,7 +723,7 @@ class ScraplingMCPServer:
         :param block_webrtc: Forces WebRTC to respect proxy settings to prevent local IP address leak.
         :param cdp_url: Instead of launching a new browser instance, connect to this CDP URL to control real browsers through CDP.
         :param google_search: Enabled by default, Scrapling will set a Google referer header.
-        :param extra_headers: A dictionary of extra headers to add to the request. _The referer set by `google_search` takes priority over the referer set here if used together._
+        :param extra_headers: A dictionary of extra headers to add to the request. If it contains a Referer header, it takes priority over the Google referer set by `google_search`.
         :param proxy: The proxy to be used with requests, it can be a string or a dictionary with the keys 'server', 'username', and 'password' only.
         :param additional_args: Additional arguments to be passed to Playwright's context as additional settings, and it takes higher priority than Scrapling's settings.
         :param session_id: Optional session ID from open_session. If provided, reuses the existing browser session instead of creating a new one.
@@ -820,7 +820,7 @@ class ScraplingMCPServer:
         :param block_webrtc: Forces WebRTC to respect proxy settings to prevent local IP address leak.
         :param cdp_url: Instead of launching a new browser instance, connect to this CDP URL to control real browsers through CDP.
         :param google_search: Enabled by default, Scrapling will set a Google referer header.
-        :param extra_headers: A dictionary of extra headers to add to the request. _The referer set by `google_search` takes priority over the referer set here if used together._
+        :param extra_headers: A dictionary of extra headers to add to the request. If it contains a Referer header, it takes priority over the Google referer set by `google_search`.
         :param proxy: The proxy to be used with requests, it can be a string or a dictionary with the keys 'server', 'username', and 'password' only.
         :param additional_args: Additional arguments to be passed to Playwright's context as additional settings, and it takes higher priority than Scrapling's settings.
         :param session_id: Optional session ID from open_session. If provided, reuses the existing browser session instead of creating a new one.
