@@ -47,11 +47,71 @@ class TestMCPServer:
         assert all(isinstance(r, ResponseModel) for r in results)
 
     @pytest.mark.asyncio
+    async def test_get_rejects_invalid_header_name(self, server, test_url):
+        """HTTP header names must be RFC token values."""
+        with pytest.raises(ValueError, match="Invalid header name"):
+            await server.get(url=test_url, headers={"Bad Header": "value"})
+
+    @pytest.mark.asyncio
+    async def test_get_rejects_crlf_header_value(self, server, test_url):
+        """HTTP header values must not contain CRLF injection payloads."""
+        with pytest.raises(ValueError, match="Invalid header value"):
+            await server.get(url=test_url, headers={"X-Bad": "a\r\nInjected: yes"})
+
+    @pytest.mark.asyncio
     async def test_fetch_tool(self, server, test_url):
         """Test the fetch tool method"""
         result = await server.fetch(url=test_url, headless=True)
         assert isinstance(result, ResponseModel)
         assert result.status == 200
+
+    @pytest.mark.asyncio
+    async def test_fetch_rejects_crlf_extra_header_value(self, server, test_url):
+        """Browser extra headers should be validated before reaching Playwright."""
+        with pytest.raises(ValueError, match="Invalid header value"):
+            await server.fetch(
+                url=test_url,
+                headless=True,
+                extra_headers={"X-Bad": "a\r\nInjected: yes"},
+            )
+
+    @pytest.mark.asyncio
+    async def test_open_session_rejects_crlf_additional_args_extra_http_headers(self, server, monkeypatch):
+        """Playwright context header overrides should be validated before session startup."""
+
+        class FakeStealthySession:
+            _is_alive = True
+
+            def __init__(self, **kwargs):
+                self.kwargs = kwargs
+
+            async def start(self):
+                return None
+
+        monkeypatch.setattr("scrapling.core.ai.AsyncStealthySession", FakeStealthySession)
+
+        with pytest.raises(ValueError, match="Invalid header value"):
+            await server.open_session(
+                session_type="stealthy",
+                additional_args={"extra_http_headers": {"X-Bad": "a\r\nInjected: yes"}},
+            )
+
+    @pytest.mark.asyncio
+    async def test_stealthy_fetch_rejects_crlf_additional_args_extra_http_headers(self, server, test_url, monkeypatch):
+        """One-shot stealthy fetches should validate Playwright context header overrides."""
+
+        class FakeStealthySession:
+            def __init__(self, **kwargs):
+                raise AssertionError("session should not start with invalid context headers")
+
+        monkeypatch.setattr("scrapling.core.ai.AsyncStealthySession", FakeStealthySession)
+
+        with pytest.raises(ValueError, match="Invalid header value"):
+            await server.stealthy_fetch(
+                url=test_url,
+                headless=True,
+                additional_args={"extra_http_headers": {"X-Bad": "a\r\nInjected: yes"}},
+            )
 
     @pytest.mark.asyncio
     async def test_bulk_fetch_tool(self, server, test_url):

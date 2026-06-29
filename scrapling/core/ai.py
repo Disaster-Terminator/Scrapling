@@ -33,6 +33,7 @@ from scrapling.core._types import (
 
 SessionType = Literal["dynamic", "stealthy"]
 ScreenshotType = Literal["png", "jpeg"]
+_HEADER_NAME_CHARS = frozenset("!#$%&'*+-.^_`|~0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 
 class ResponseModel(BaseModel):
@@ -102,6 +103,38 @@ def _normalize_credentials(credentials: Optional[Dict[str, str]]) -> Optional[Tu
         raise ValueError("Credentials dictionary must contain both 'username' and 'password' keys")
 
     return username, password
+
+
+def _validate_headers(headers: Optional[Mapping[str, Optional[str]]], param_name: str) -> None:
+    """Validate user-supplied HTTP headers before passing them to transports."""
+    if not headers:
+        return
+
+    for name, value in headers.items():
+        if not isinstance(name, str) or not name or any(char not in _HEADER_NAME_CHARS for char in name):
+            raise ValueError(f"Invalid header name in '{param_name}': {name!r}")
+
+        if value is None:
+            continue
+        if not isinstance(value, str):
+            raise TypeError(f"Invalid header value for {name!r}: expected str or None")
+        if any(ord(char) < 32 or 127 <= ord(char) <= 159 for char in value):
+            raise ValueError(f"Invalid header value for {name!r}: control characters are not allowed")
+
+
+def _validate_additional_context_headers(additional_args: Optional[Mapping[str, Any]]) -> None:
+    """Validate Playwright context header overrides exposed through MCP."""
+    if not additional_args:
+        return
+
+    extra_http_headers = additional_args.get("extra_http_headers")
+    if extra_http_headers is None:
+        return
+
+    if not isinstance(extra_http_headers, Mapping):
+        raise TypeError("Invalid value for 'additional_args.extra_http_headers': expected a mapping")
+
+    _validate_headers(extra_http_headers, "additional_args.extra_http_headers")
 
 
 class ScraplingMCPServer:
@@ -179,6 +212,8 @@ class ScraplingMCPServer:
         :param solve_cloudflare: (Stealthy only) Solves all types of the Cloudflare's Turnstile/Interstitial challenges.
         :param additional_args: (Stealthy only) Additional arguments to be passed to Playwright's context as additional settings.
         """
+        _validate_headers(extra_headers, "extra_headers")
+
         session_id = session_id or uuid4().hex[:12]
         if session_id in self._sessions:
             raise ValueError(
@@ -208,6 +243,7 @@ class ScraplingMCPServer:
 
         session: Union[AsyncDynamicSession, AsyncStealthySession]
         if session_type == "stealthy":
+            _validate_additional_context_headers(additional_args)
             session = AsyncStealthySession(
                 **common_kwargs,
                 hide_canvas=hide_canvas,
@@ -450,6 +486,8 @@ class ScraplingMCPServer:
         :param http3: Whether to use HTTP3. Defaults to False. It might be problematic if used it with `impersonate`.
         :param stealthy_headers: If enabled (default), it creates and adds real browser headers. It also sets a Google referer header.
         """
+        _validate_headers(headers, "headers")
+
         normalized_proxy_auth = _normalize_credentials(proxy_auth)
         normalized_auth = _normalize_credentials(auth)
 
@@ -617,6 +655,8 @@ class ScraplingMCPServer:
         :param proxy: The proxy to be used with requests, it can be a string or a dictionary with the keys 'server', 'username', and 'password' only.
         :param session_id: Optional session ID from open_session. If provided, reuses the existing browser session instead of creating a new one.
         """
+        _validate_headers(extra_headers, "extra_headers")
+
         if session_id:
             entry = self._get_session(session_id, "dynamic")
             tasks = [
@@ -825,6 +865,8 @@ class ScraplingMCPServer:
         :param additional_args: Additional arguments to be passed to Playwright's context as additional settings, and it takes higher priority than Scrapling's settings.
         :param session_id: Optional session ID from open_session. If provided, reuses the existing browser session instead of creating a new one.
         """
+        _validate_headers(extra_headers, "extra_headers")
+
         if session_id:
             entry = self._get_session(session_id, "stealthy")
             tasks = [
@@ -845,6 +887,7 @@ class ScraplingMCPServer:
             ]
             responses = await gather(*tasks)
         else:
+            _validate_additional_context_headers(additional_args)
             async with AsyncStealthySession(
                 wait=wait,
                 proxy=proxy,
