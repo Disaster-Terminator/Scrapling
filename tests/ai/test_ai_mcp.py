@@ -14,6 +14,7 @@ from scrapling.core.ai import (
     SessionInfo,
     SessionCreatedModel,
     SessionClosedModel,
+    _SessionEntry,
     _normalize_credentials,
 )
 
@@ -281,6 +282,58 @@ class TestScreenshot:
             assert result[0].mimeType == "image/png"
         finally:
             await server.close_session(opened.session_id)
+
+    @pytest.mark.asyncio
+    async def test_screenshot_waits_before_capture(self, server):
+        """wait and wait_selector should be applied before taking the screenshot."""
+        events = []
+
+        class FakeLocator:
+            first = None
+
+            def __init__(self):
+                self.first = self
+
+            async def wait_for(self, **kwargs):
+                events.append(("wait_selector", kwargs))
+
+        class FakePage:
+            url = "https://example.com/ready"
+
+            def locator(self, selector):
+                events.append(("locator", selector))
+                return FakeLocator()
+
+            async def wait_for_timeout(self, wait):
+                events.append(("wait", wait))
+
+            async def screenshot(self, **kwargs):
+                events.append(("screenshot", kwargs))
+                return b"image"
+
+        class FakeSession:
+            _is_alive = True
+
+            async def fetch(self, url, **kwargs):
+                await kwargs["page_action"](FakePage())
+                return object()
+
+        server._sessions["session-id"] = _SessionEntry(session=FakeSession(), session_type="dynamic")
+
+        await server.screenshot(
+            url="https://example.com",
+            session_id="session-id",
+            wait=25,
+            wait_selector="#ready",
+            wait_selector_state="visible",
+        )
+
+        assert events == [
+            ("locator", "#ready"),
+            ("wait_selector", {"state": "visible"}),
+            ("wait", 25),
+            ("screenshot", {"type": "png", "full_page": False}),
+        ]
 
     @pytest.mark.asyncio
     async def test_screenshot_full_page_taller_than_viewport(self, server):

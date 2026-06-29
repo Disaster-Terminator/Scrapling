@@ -302,6 +302,11 @@ class ScraplingMCPServer:
 
         async def _capture(page: Any) -> None:
             try:
+                if wait_selector:
+                    waiter = page.locator(wait_selector)
+                    await waiter.first.wait_for(state=wait_selector_state)
+                if wait:
+                    await page.wait_for_timeout(wait)
                 captured["bytes"] = await page.screenshot(**screenshot_kwargs)
                 captured["url"] = page.url
             except Exception as exc:
@@ -309,11 +314,10 @@ class ScraplingMCPServer:
 
         await entry.session.fetch(
             url,
-            wait=wait,
+            wait=0,
             timeout=timeout,
             network_idle=network_idle,
-            wait_selector=wait_selector,
-            wait_selector_state=wait_selector_state,
+            wait_selector=None,
             page_action=_capture,
         )
 
