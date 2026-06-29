@@ -262,12 +262,9 @@ class StealthySession(SyncSession, StealthySessionMixin):
                             log.error(f"Error executing page_action: {e}")
 
                     if params.wait_selector:
-                        try:
-                            waiter: Locator = page.locator(params.wait_selector)
-                            waiter.first.wait_for(state=params.wait_selector_state)
-                            self._wait_for_page_stability(page, params.load_dom, params.network_idle)
-                        except Exception as e:  # pragma: no cover
-                            log.error(f"Error waiting for selector {params.wait_selector}: {e}")
+                        waiter: Locator = page.locator(params.wait_selector)
+                        waiter.first.wait_for(state=params.wait_selector_state)
+                        self._wait_for_page_stability(page, params.load_dom, params.network_idle)
 
                     page.wait_for_timeout(params.wait)
 
@@ -538,12 +535,9 @@ class AsyncStealthySession(AsyncSession, StealthySessionMixin):
                             log.error(f"Error executing page_action: {e}")
 
                     if params.wait_selector:
-                        try:
-                            waiter: AsyncLocator = page.locator(params.wait_selector)
-                            await waiter.first.wait_for(state=params.wait_selector_state)
-                            await self._wait_for_page_stability(page, params.load_dom, params.network_idle)
-                        except Exception as e:  # pragma: no cover
-                            log.error(f"Error waiting for selector {params.wait_selector}: {e}")
+                        waiter: AsyncLocator = page.locator(params.wait_selector)
+                        await waiter.first.wait_for(state=params.wait_selector_state)
+                        await self._wait_for_page_stability(page, params.load_dom, params.network_idle)
 
                     await page.wait_for_timeout(params.wait)
 
